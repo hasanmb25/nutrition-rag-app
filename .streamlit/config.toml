@@ -1,0 +1,13 @@
+[theme]
+
+A vibrant, fresh green for buttons and highlights
+
+primaryColor = "#27ae60"
+
+Sets a clean, modern base font
+
+font = "sans serif"
+
+We leave background colors default so Streamlit's native Light/Dark mode toggle
+
+(in the top right settings menu) works perfectly without glitching!
