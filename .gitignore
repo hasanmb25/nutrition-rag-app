@@ -1,45 +1,31 @@
-Environments
-
+# Virtual environments
 venv/
 .venv/
 env/
-Lib/
-Scripts/
 
-Credentials & Secrets (CRITICAL: Never commit these!)
-
+# Credentials and secrets
 .env
 .env.*
 
-Local Vector Database (Chroma)
-
-We ignore this because it is large and can be automatically rebuilt from our recipes.json
-
+# Local vector database (rebuilt from data/recipes.json)
 chroma_db/
 
-Raw Data & Kaggle CSVs
-
-(We want to ignore massive raw data files, but keep our cleaned data/recipes.json)
-
+# Raw data
 data/*.csv
-data/RAW_recipes.csv
 
-Temporary Uploads & Images (From our Streamlit UI and Vision testing)
-
+# Temporary uploads and test images
 temp_upload.jpg
 sample_plate.jpg
 *.png
 *.jpeg
 
-Python Cache & Bytecode
-
-pycache/
+# Python cache and bytecode
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-IDEs and OS-specific files
-
+# Editors and OS files
 .vscode/
 .idea/
 .DS_Store
