@@ -2,6 +2,7 @@
 
 Nutrify is a Streamlit nutrition assistant for logging meals from photos,
 tracking daily macros, and finding recipes based on available ingredients.
+Accounts keep each user's profile and meal history separate.
 
 ## Project structure
 
@@ -12,6 +13,8 @@ tracking daily macros, and finding recipes based on available ingredients.
 |-- views/                  # Dashboard, meal logging, and recipe pages
 |-- data/recipes.json       # Recipe data used to build the vector database
 |-- database.py             # MySQL setup and meal logging
+|-- account_security.py     # Profile validation and password hashing
+|-- nutrition_estimates.py  # GPT profile estimates and numeric validation
 |-- rag_chain.py            # Recipe search and nutrition critique chains
 |-- vision.py               # Meal image analysis
 |-- config.py               # Environment variable loading
@@ -50,7 +53,26 @@ MYSQL_DATABASE=nutrition_app
 ```
 
 The `.env` file contains secrets and should not be committed. The app creates
-the database and meal-log table when you open the Dashboard or Log a Meal page.
+the database and account/profile tables on startup. Existing `daily_logs` rows
+are preserved and assigned to the first account that is created; subsequent
+meal rows belong to the currently signed-in account. Dashboard totals are
+filtered to the current date, while the underlying rows and recent daily
+history remain available to that account.
+
+Create an account with a unique username and password, then enter age, gender
+identity, height, weight, activity level, and profession. Profile
+recommendations require an age of at least 18. A separate, optional sex input
+is used only for the sex-specific BMR estimate. If it is not provided, the
+app withholds BMR and the calorie target rather than inferring sex from gender
+identity.
+
+Nutrify uses `gpt-4o-mini` with `OPENAI_API_KEY` to produce structured BMI,
+BMR, target-weight range, goal, and calorie estimates. Users must consent
+during account creation. The model receives age, height, weight, activity
+level, and the optional BMR sex input; it does not receive usernames,
+passwords, gender identity, or profession. Numeric outputs are checked against
+local formula-based estimates before they are shown. The results are
+informational estimates, not medical advice or a diagnosis.
 
 The local Chroma vector database is created from `data/recipes.json` the first
 time you generate a recipe. This requires your OpenAI API key.
@@ -63,3 +85,9 @@ streamlit run app.py
 
 Open the local URL printed in your terminal. Use the sidebar to move between
 the Dashboard, Log a Meal, and Recipe AI pages.
+
+Run the focused account, data-isolation, and estimate tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```

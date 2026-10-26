@@ -1,13 +1,91 @@
 import streamlit as st
+from mysql.connector import Error as MySQLError
+
 import database
 import rag_chain
 from app_services import initialize_database
+from nutrition_estimates import NutritionAssessmentError, generate_assessment
+
 
 initialize_database()
+user_id = st.session_state.get("user_id")
+if user_id is None:
+    st.error("Please sign in to view your nutrition dashboard.")
+    st.stop()
 
-st.header("Your Daily Nutrition Dashboard")
+try:
+    profile = database.get_user_by_id(user_id)
+    if profile is None:
+        st.error("The signed-in profile could not be found. Please sign in again.")
+        st.stop()
+    if not profile["openai_profile_consent"]:
+        st.error("OpenAI processing consent is required for your profile estimates.")
+        st.stop()
+    assessment = database.get_profile_assessment(user_id)
+except MySQLError as error:
+    st.error(f"Unable to load your profile assessment: {error}")
+    st.stop()
 
-totals = database.get_today_totals()
+assessment_save_warning = None
+if assessment is None:
+    try:
+        assessment = generate_assessment(profile)
+    except NutritionAssessmentError as error:
+        st.error(str(error))
+        st.stop()
+    try:
+        database.save_profile_assessment(user_id, assessment)
+    except MySQLError as error:
+        assessment_save_warning = (
+            "Your estimate was generated, but could not be saved. "
+            f"The model may be called again on a later visit. Details: {error}"
+        )
+
+st.header(f"Your Nutrify dashboard, {profile['username']}")
+st.subheader("Your profile estimates")
+st.caption(
+    "AI-generated wellness estimates, not medical advice or a diagnosis. "
+    "BMI reference ranges and calorie needs are approximate."
+)
+if assessment_save_warning:
+    st.warning(assessment_save_warning)
+
+metric_columns = st.columns(4)
+metric_columns[0].metric("BMI", f"{assessment['bmi']:.1f}")
+metric_columns[1].metric(
+    "BMR",
+    (
+        f"{assessment['bmr_kcal']:.0f} kcal/day"
+        if assessment["bmr_kcal"] is not None
+        else "Not estimated"
+    ),
+)
+metric_columns[2].metric(
+    "Target weight range",
+    f"{assessment['target_weight_min_kg']:.1f}-"
+    f"{assessment['target_weight_max_kg']:.1f} kg",
+)
+metric_columns[3].metric("Suggested goal", assessment["goal"])
+
+if assessment["daily_calorie_limit_kcal"] is None:
+    st.info(
+        "Daily calorie limit is not estimated because the optional sex input "
+        "for the BMR equation was not provided."
+    )
+else:
+    st.metric(
+        "Estimated daily calorie target",
+        f"{assessment['daily_calorie_limit_kcal']} kcal/day",
+    )
+st.write(assessment["explanation"])
+
+st.divider()
+st.header("Your daily nutrition")
+try:
+    totals = database.get_today_totals(user_id)
+except MySQLError as error:
+    st.error(f"Unable to load today's nutrition totals: {error}")
+    st.stop()
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Calories", f"{totals['calories']} kcal")
@@ -15,15 +93,26 @@ col2.metric("Protein", f"{totals['protein']} g")
 col3.metric("Carbs", f"{totals['carbs']} g")
 col4.metric("Fat", f"{totals['fat']} g")
 
+st.subheader("Recent daily history")
+try:
+    history = database.get_daily_history(user_id)
+except MySQLError as error:
+    st.error(f"Unable to load your meal history: {error}")
+else:
+    if history:
+        st.dataframe(history, hide_index=True, width="stretch")
+    else:
+        st.info("Your meals will appear here after you log them.")
+
 st.divider()
-
-st.subheader("Generate Clinical Critique")
-st.write("Get professional feedback from the AI (gpt-4o) based on your logged intake today.")
-
-if st.button("Synthesize Health Report", type="primary"):
-    with st.spinner("Consulting Clinical AI..."):
+st.subheader("Generate nutrition critique")
+st.write(
+    "Get AI feedback based on your logged intake today. "
+    "This is informational and does not replace professional advice."
+)
+if st.button("Synthesize nutrition report", type="primary"):
+    with st.spinner("Generating your report..."):
         critique_chain = rag_chain.get_clinical_critique_chain()
-
         report = critique_chain.invoke(
             {
                 "calories": totals["calories"],
@@ -32,5 +121,4 @@ if st.button("Synthesize Health Report", type="primary"):
                 "fat": totals["fat"],
             }
         )
-
         st.info(report)

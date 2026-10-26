@@ -1,6 +1,7 @@
 import os
 
 import streamlit as st
+from mysql.connector import Error as MySQLError
 from PIL import Image
 
 import database
@@ -8,6 +9,10 @@ import vision
 from app_services import initialize_database
 
 initialize_database()
+user_id = st.session_state.get("user_id")
+if user_id is None:
+    st.error("Please sign in to log a meal.")
+    st.stop()
 
 st.header("Log a Meal via Image")
 st.write(
@@ -39,18 +44,20 @@ if uploaded_file is not None:
                             f"{item.carbs}g Carbs | {item.fat}g Fat"
                         )
 
-                        success = database.log_meal(
-                            item.food_name,
-                            item.weight_g,
-                            item.calories,
-                            item.protein,
-                            item.carbs,
-                            item.fat,
-                        )
-                        if success:
-                            st.caption("💾 *Saved to MySQL Database*")
+                        try:
+                            database.log_meal(
+                                user_id,
+                                item.food_name,
+                                item.weight_g,
+                                item.calories,
+                                item.protein,
+                                item.carbs,
+                                item.fat,
+                            )
+                        except MySQLError as error:
+                            st.error(f"Unable to save this meal to MySQL: {error}")
                         else:
-                            st.error("Failed to save to database.")
+                            st.caption("💾 *Saved to MySQL Database*")
             else:
                 st.error("Could not parse food items from this image.")
 

@@ -17,7 +17,7 @@ col1, col2 = st.columns(2)
 with col1:
     selected_cuisine = st.selectbox(
         "Cuisine Preference",
-        ["Flexible", "Bangladeshi", "Italian", "Mexican", "Asian", "Mediterranean"],
+        ["Flexible", "Indian", "Italian", "Mexican", "Asian", "Mediterranean"],
     )
 with col2:
     selected_diet = st.selectbox(

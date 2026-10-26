@@ -6,6 +6,7 @@ def initialize_database():
     import database
 
     database.init_db()
+    return True
 
 
 @st.cache_resource
