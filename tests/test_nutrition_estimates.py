@@ -4,10 +4,9 @@ from unittest.mock import patch
 from langchain_core.runnables import RunnableLambda
 
 from nutrition_estimates import (
-    NutritionAssessment,
-    NutritionAssessmentError,
+    NutritionExplanation,
     _expected_assessment,
-    _validate_assessment,
+    normalize_assessment,
     generate_assessment,
 )
 
@@ -22,19 +21,6 @@ PROFILE = {
     "activity_level": "Moderately active",
     "profession": "Student",
 }
-
-
-def assessment_from_expected(expected):
-    return NutritionAssessment(
-        **{
-            **expected,
-            "bmi": round(expected["bmi"], 1),
-            "bmr_kcal": round(expected["bmr_kcal"]),
-            "target_weight_min_kg": round(expected["target_weight_min_kg"], 1),
-            "target_weight_max_kg": round(expected["target_weight_max_kg"], 1),
-            "explanation": "These are general estimates, not medical advice.",
-        }
-    )
 
 
 class NutritionEstimatesTests(unittest.TestCase):
@@ -53,21 +39,36 @@ class NutritionEstimatesTests(unittest.TestCase):
 
         expected = _expected_assessment(profile)
 
-        self.assertIsNone(expected["bmr_kcal"])
-        self.assertIsNone(expected["daily_calorie_limit_kcal"])
+        self.assertAlmostEqual(expected["bmr_kcal"], 1551.5, places=1)
+        self.assertEqual(expected["daily_calorie_limit_kcal"], 2405)
 
-    def test_model_values_are_rejected_when_inconsistent(self):
+    def test_saved_model_numbers_are_replaced_by_local_estimates(self):
         expected = _expected_assessment(PROFILE)
-        response = assessment_from_expected(expected).model_copy(
-            update={"bmi": 35.0}
-        )
+        saved_assessment = {
+            "bmi": 35.0,
+            "bmr_kcal": 9999,
+            "target_weight_min_kg": 10,
+            "target_weight_max_kg": 20,
+            "goal": "Calorie surplus",
+            "daily_calorie_limit_kcal": 9999,
+            "explanation": "A saved explanation.",
+        }
 
-        with self.assertRaisesRegex(NutritionAssessmentError, "BMI"):
-            _validate_assessment(response, expected)
+        normalized = normalize_assessment(PROFILE, saved_assessment)
+
+        self.assertEqual(normalized["bmi"], expected["bmi"])
+        self.assertEqual(normalized["bmr_kcal"], expected["bmr_kcal"])
+        self.assertEqual(
+            normalized["daily_calorie_limit_kcal"],
+            expected["daily_calorie_limit_kcal"],
+        )
+        self.assertEqual(normalized["explanation"], "A saved explanation.")
 
     def test_gpt_model_is_used_with_only_required_profile_inputs(self):
         expected = _expected_assessment(PROFILE)
-        response = assessment_from_expected(expected)
+        response = NutritionExplanation(
+            explanation="These are general estimates, not medical advice."
+        )
         captured_messages = []
         model_output = RunnableLambda(
             lambda prompt_value: (
@@ -96,9 +97,16 @@ class NutritionEstimatesTests(unittest.TestCase):
         )
         prompt_text = "\n".join(message.content for message in captured_messages)
         self.assertIn("age_years", prompt_text)
+        self.assertIn("bmr_kcal", prompt_text)
         self.assertNotIn("gender_identity", prompt_text)
         self.assertNotIn("profession", prompt_text)
         self.assertNotIn("username", prompt_text)
+        self.assertEqual(result["bmr_kcal"], expected["bmr_kcal"])
+        self.assertEqual(
+            result["daily_calorie_limit_kcal"],
+            expected["daily_calorie_limit_kcal"],
+        )
+        self.assertEqual(result["explanation"], response.explanation)
 
 
 if __name__ == "__main__":

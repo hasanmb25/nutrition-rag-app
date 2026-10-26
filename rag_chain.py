@@ -1,12 +1,13 @@
 import os
 import json
+import re
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnableLambda
 from operator import itemgetter
 from config import Config
 
@@ -143,27 +144,80 @@ def get_recipe_recommendation_chain(vector_store):
 
 def get_clinical_critique_chain():
     """
-    Chain B: Clinical Critique using gpt-4o.
-    Takes the user's daily totals and outputs a health synthesis. No vector retrieval needed here.
+    Chain B: Generates qualitative macro feedback and adds a deterministic,
+    profile-based calorie comparison. No vector retrieval is needed here.
     """
-    # -----step_10:builds_critique_chain_without_vector_retrieval---
     prompt = PromptTemplate.from_template(
-        "You are a strict but supportive clinical nutritionist AI. "
-        "Analyze the user's daily macro intake against standard daily goals (e.g., 2000 calories, 150g protein, 250g carbs, 65g fat).\n\n"
-        "User's Logged Totals Today:\n"
-        "Calories: {calories} kcal\n"
+        "You are a supportive, non-clinical nutrition assistant. "
+        "Give brief, practical qualitative feedback on these logged macros only. "
+        "Do not discuss calories, calorie targets, standard daily goals, or numerical "
+        "recommendations. Do not infer that no food was eaten from zero logged values. "
+        "Do not diagnose deficiencies or use alarming language. "
+        "Use one or two sentences and avoid all numbers.\n\n"
         "Protein: {protein} g\n"
         "Carbs: {carbs} g\n"
-        "Fat: {fat} g\n\n"
-        "Provide a concise, professional evaluation of their intake. Highlight any deficiencies or excesses and offer brief, actionable advice."
+        "Fat: {fat} g"
     )
-    
-    critique_chain = (
-        prompt
-        | llm_pro
-        | StrOutputParser()
-    )
-    return critique_chain
+    macro_feedback_chain = prompt | llm_pro | StrOutputParser()
+
+    def build_personalized_report(inputs):
+        calories = float(inputs["calories"])
+        calorie_target = float(inputs["daily_calorie_target"])
+        if calories < 0 or calorie_target <= 0:
+            raise ValueError("Calories must be non-negative and target must be positive.")
+
+        macro_feedback = macro_feedback_chain.invoke(
+            {
+                "protein": inputs["protein"],
+                "carbs": inputs["carbs"],
+                "fat": inputs["fat"],
+            }
+        ).strip()
+        unsupported_feedback = (
+            re.search(r"\d", macro_feedback)
+            or re.search(r"calor|kcal|standard daily|typical target", macro_feedback, re.I)
+            or re.search(
+                r"critical|critically|severe|dangerous|malnutrition|deficien|"
+                r"unsustainable|seek professional|immediately|urgent",
+                macro_feedback,
+                re.I,
+            )
+        )
+        if not macro_feedback or unsupported_feedback:
+            macro_feedback = (
+                "Qualitative macro feedback was omitted because the generated "
+                "comment included unsupported targets or clinical-sounding claims."
+            )
+
+        goal = str(inputs["goal"])
+        if calories == 0:
+            calorie_comparison = (
+                "No meals are logged today (0 kcal logged). This does not mean "
+                "you consumed no food. Your personalized estimated daily target is "
+                f"{calorie_target:.0f} kcal; log meals to compare today's intake with it."
+            )
+        else:
+            difference = calories - calorie_target
+            if difference > 0:
+                comparison = f"{difference:.0f} kcal above"
+            elif difference < 0:
+                comparison = f"{abs(difference):.0f} kcal below"
+            else:
+                comparison = "at"
+            calorie_comparison = (
+                f"Calories logged today: {calories:.0f} kcal, which is "
+                f"{comparison} your personalized estimated daily target of "
+                f"{calorie_target:.0f} kcal."
+            )
+
+        return (
+            f"Suggested goal: {goal} (informational estimate).\n\n"
+            f"{calorie_comparison}\n\n"
+            f"Macro feedback: {macro_feedback}\n\n"
+            "Your calorie target is an approximate estimate, not medical advice."
+        )
+
+    return RunnableLambda(build_personalized_report)
 
 # Quick test execution block
 if __name__ == "__main__":

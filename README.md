@@ -62,20 +62,25 @@ history remain available to that account.
 Create an account with a unique username and password, then enter age, gender
 identity, height, weight, activity level, and profession. Profile
 recommendations require an age of at least 18. A separate, optional sex input
-is used only for the sex-specific BMR estimate. If it is not provided, the
-app withholds BMR and the calorie target rather than inferring sex from gender
-identity.
+is used only for the sex-specific BMR estimate. If it is not provided, Nutrify
+shows a clearly labeled midpoint of the male/female Mifflin-St Jeor estimates
+instead of inferring sex from gender identity.
 
-Nutrify uses `gpt-4o-mini` with `OPENAI_API_KEY` to produce structured BMI,
-BMR, target-weight range, goal, and calorie estimates. Users must consent
-during account creation. The model receives age, height, weight, activity
-level, and the optional BMR sex input; it does not receive usernames,
-passwords, gender identity, or profession. Numeric outputs are checked against
-local formula-based estimates before they are shown. The results are
-informational estimates, not medical advice or a diagnosis.
+Nutrify calculates BMI, BMR, target-weight range, goal, and daily calorie
+target using local formulas, then uses `gpt-4o-mini` with `OPENAI_API_KEY` to
+explain those values. This keeps numerical results consistent and available
+even if the model's calculation differs or the AI explanation is temporarily
+unavailable. Users must consent during account creation. The model receives
+age, height, weight, activity level, and the optional BMR sex input; it does
+not receive usernames, passwords, gender identity, or profession. The results
+are informational estimates, not medical advice or a diagnosis.
 
 The local Chroma vector database is created from `data/recipes.json` the first
 time you generate a recipe. This requires your OpenAI API key.
+
+The dashboard's synthesized daily report compares logged calories with the
+signed-in user's estimated daily calorie target and BMI-based suggested goal,
+instead of applying the same generic calorie benchmark to every account.
 
 ## Run the app
 
