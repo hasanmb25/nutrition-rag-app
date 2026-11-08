@@ -82,6 +82,30 @@ The dashboard's synthesized daily report compares logged calories with the
 signed-in user's estimated daily calorie target and BMI-based suggested goal,
 instead of applying the same generic calorie benchmark to every account.
 
+## Presentation demo account
+
+From the project root, run:
+
+```bash
+python -m scripts.seed_presentation_demo
+```
+
+The script creates a fictional `nutrifyuser` profile and prompts
+for a password and confirmation before creating it. It also asks for explicit
+consent before saving the profile with OpenAI processing enabled. Keep the
+password you choose; it is not stored in the repository or printed by the
+script. If this demo account already exists, the script preserves its profile
+and password.
+
+The seeder adds synthetic meals for today and the previous six days. Re-running
+it replaces only its marked meal rows for the demo account, so today's dashboard
+totals and recent-history charts remain populated without duplicating data.
+It does not modify user ID 1 or any other account. Sign in to the app with
+`nutrifyuser` and the password you set. An OpenAI API key is needed
+for AI-generated profile explanations and the synthesized nutrition report;
+the dashboard can still show formula-based estimates if the AI explanation is
+unavailable.
+
 ## Run the app
 
 ```bash
