@@ -85,6 +85,7 @@ if assessment_model_warning:
 
 render_metric_row(
     [
+        ("Current weight", f"{float(profile['weight_kg']):.1f} kg"),
         ("BMI", f"{assessment['bmi']:.1f}"),
         ("BMR estimate", f"{assessment['bmr_kcal']:.0f} kcal/day"),
         (
