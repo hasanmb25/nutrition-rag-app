@@ -1,12 +1,67 @@
 [theme]
+# Nutrify's presentation tokens. Light and dark values below keep the
+# built-in Streamlit theme switcher available without application logic.
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap"
+codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+baseFontSize = 16
+baseFontWeight = 400
+headingFontSizes = ["2.4rem", "1.65rem", "1.25rem", "1.05rem", "0.95rem", "0.875rem"]
+headingFontWeights = [700, 650, 650, 600, 600, 600]
+baseRadius = "8px"
+buttonRadius = "6px"
+showWidgetBorder = true
+showSidebarBorder = true
+linkUnderline = false
 
-# A vibrant, fresh green for buttons and highlights
+[theme.light]
+primaryColor = "#0F5C45"
+backgroundColor = "#F7F9F6"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#17211C"
+borderColor = "#D7E0D8"
+dataframeBorderColor = "#D7E0D8"
+dataframeHeaderBackgroundColor = "#EDF3EC"
+greenColor = "#0F5C45"
+greenBackgroundColor = "#E4F0E8"
+greenTextColor = "#0B4937"
+blueColor = "#236F8F"
+orangeColor = "#A65B10"
+yellowColor = "#806000"
+violetColor = "#6B4E9B"
+redColor = "#B42318"
+grayColor = "#58645B"
+chartCategoricalColors = ["#0F5C45", "#236F8F", "#A65B10", "#6B4E9B", "#B42318", "#587A55"]
+chartSequentialColors = ["#F0F6F0", "#DCECDD", "#C7E0C9", "#ADD2B0", "#8CC092", "#69AA74", "#478D59", "#2B7042", "#185B35", "#0B4729"]
 
-primaryColor = "#27ae60"
+[theme.dark]
+primaryColor = "#23744B"
+backgroundColor = "#101713"
+secondaryBackgroundColor = "#18221B"
+textColor = "#E7F0E9"
+borderColor = "#314037"
+dataframeBorderColor = "#314037"
+dataframeHeaderBackgroundColor = "#1E2B22"
+greenColor = "#78C39A"
+greenBackgroundColor = "#183A2A"
+greenTextColor = "#A4DDB8"
+blueColor = "#75C5E4"
+orangeColor = "#F1B66F"
+yellowColor = "#F0D680"
+violetColor = "#CBB5F4"
+redColor = "#F3A4A0"
+grayColor = "#AAB8AD"
+chartCategoricalColors = ["#78C39A", "#75C5E4", "#F1B66F", "#CBB5F4", "#F3A4A0", "#A8C79F"]
+chartSequentialColors = ["#122016", "#17301E", "#1C4027", "#255333", "#316640", "#427B50", "#599263", "#76AA7D", "#9BC39F", "#C5DEC6"]
 
-# Sets a clean, modern base font
+[theme.light.sidebar]
+backgroundColor = "#EDF3EC"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#17211C"
+borderColor = "#D7E0D8"
 
-font = "sans serif"
-
-# Leave background colors default so Streamlit's native Light/Dark mode toggle
-# (in the top right settings menu) works without overriding its appearance.
+[theme.dark.sidebar]
+backgroundColor = "#141D17"
+secondaryBackgroundColor = "#1E2B22"
+textColor = "#E7F0E9"
+borderColor = "#314037"

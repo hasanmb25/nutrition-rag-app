@@ -1,31 +1,43 @@
 import streamlit as st
 
 from app_services import load_vector_store
+from frontend import render_page_intro, render_section_heading
 
-st.header("Pantry-to-Recipe Recommender")
-st.write(
-    "Tell the AI what ingredients you have, set your preferences, "
-    "and it will search our vector database."
+render_page_intro(
+    "Recipe discovery",
+    "Pantry-to-recipe recommender",
+    "Tell the AI what you have on hand, then refine the recommendation by cuisine and dietary goal.",
+    icon=":material/menu_book:",
 )
 
-user_ingredients = st.text_input(
-    "What's in your fridge/pantry?",
-    placeholder="e.g., Chicken breast, spinach, quinoa",
-)
-
-col1, col2 = st.columns(2)
-with col1:
-    selected_cuisine = st.selectbox(
-        "Cuisine Preference",
-        ["Flexible", "Indian", "Italian", "Mexican", "Asian", "Mediterranean"],
+with st.container(border=True):
+    render_section_heading(
+        "Build a recipe brief",
+        "Use ingredients you have on hand and choose the constraints that matter today.",
+        icon=":material/tune:",
     )
-with col2:
-    selected_diet = st.selectbox(
-        "Dietary Goal",
-        ["Flexible", "High Protein", "Low Carb", "Keto", "Vegan", "Vegetarian"],
-    )
+    with st.form("recipe_discovery", border=False):
+        user_ingredients = st.text_input(
+            "What is in your fridge or pantry?",
+            placeholder="For example: chicken breast, spinach, quinoa",
+            help="List ingredients separated by commas for the most useful recommendation.",
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_cuisine = st.selectbox(
+                "Cuisine preference",
+                ["Flexible", "Indian", "Italian", "Mexican", "Asian", "Mediterranean"],
+            )
+        with col2:
+            selected_diet = st.selectbox(
+                "Dietary goal",
+                ["Flexible", "High Protein", "Low Carb", "Keto", "Vegan", "Vegetarian"],
+            )
+        submitted = st.form_submit_button(
+            "Generate recipe", type="primary", icon=":material/auto_awesome:"
+        )
 
-if st.button("Generate Recipe", type="primary"):
+if submitted:
     if not user_ingredients:
         st.warning("Please enter some ingredients first.")
     else:
@@ -48,5 +60,10 @@ if st.button("Generate Recipe", type="primary"):
                     }
                 )
 
-                st.markdown("### Suggested Recipe")
-                st.write(response)
+                with st.container(border=True):
+                    render_section_heading(
+                        "Suggested recipe",
+                        "Generated from the ingredients and preferences you provided.",
+                        icon=":material/auto_awesome:",
+                    )
+                    st.write(response)

@@ -1,14 +1,15 @@
 import base64
 import os
+from typing import Optional
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from config import Config
 
 # 1. Define our strict output schema using Pydantic
-# This forces the LLM to return exactly the data structure we need for our MySQL database.
 class FoodItem(BaseModel):
     food_name: str = Field(description="Name of the specific food item")
+    pieces: Optional[int] = Field(default=None, description="The exact count for countable items (e.g., 2 for two eggs). Null if the item is a liquid, powder, or amorphous mass like rice.")
     weight_g: float = Field(description="Estimated weight in grams")
     calories: float = Field(description="Estimated total calories")
     protein: float = Field(description="Estimated protein in grams")
@@ -19,7 +20,6 @@ class MealAnalysis(BaseModel):
     items: list[FoodItem] = Field(description="List of all distinct food items identified in the image")
 
 # 2. Initialize the LLM with structured output capabilities
-# We use gpt-4o-mini as it is extremely fast and cost-effective for vision tasks.
 llm = ChatOpenAI(model="gpt-4o-mini", api_key=Config.OPENAI_API_KEY, temperature=0.0)
 structured_vision_llm = llm.with_structured_output(MealAnalysis)
 
@@ -39,15 +39,15 @@ def analyze_meal_image(image_path: str) -> MealAnalysis:
 
         base64_image = encode_image(image_path)
 
-        # LangChain v0.3+ syntax for passing images to chat models
         message = HumanMessage(
             content=[
                 {
                     "type": "text", 
                     "text": (
                         "You are a clinical nutritionist AI. Analyze this image of a meal. "
-                        "Identify each distinct food item, estimate its portion size in grams, "
-                        "and provide a highly accurate estimation of calories, protein, carbs, and fat. "
+                        "Identify each distinct food item and estimate its portion size in grams. "
+                        "If the food item is distinctly countable (like eggs, slices of bread, or apples), provide the exact count in pieces. "
+                        "Provide a highly accurate estimation of calories, protein, carbs, and fat. "
                         "If it is a receipt, parse the grocery items and estimate macros per standard serving."
                     )
                 },
@@ -59,7 +59,6 @@ def analyze_meal_image(image_path: str) -> MealAnalysis:
         )
 
         print("Analyzing image... This may take a few seconds.")
-        # Invoke the chain. The output will automatically be a parsed MealAnalysis Pydantic object.
         result = structured_vision_llm.invoke([message])
         return result
 
@@ -69,8 +68,6 @@ def analyze_meal_image(image_path: str) -> MealAnalysis:
 
 # Quick test execution block
 if __name__ == "__main__":
-    # To test this, you will need a sample image in your project folder.
-    # Let's assume you place a file named "sample_plate.jpg" in the root directory.
     test_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_plate.jpg")
     
     if os.path.exists(test_image_path):
@@ -80,8 +77,9 @@ if __name__ == "__main__":
         if analysis:
             print("\n✅ Successfully Parsed Meal:")
             for item in analysis.items:
-                print(f"- {item.food_name} ({item.weight_g}g): {item.calories} kcal "
+                # Display piece count if the model populated it
+                count_str = f" ({item.pieces} pieces)" if item.pieces is not None else ""
+                print(f"- {item.food_name}{count_str} ({item.weight_g}g): {item.calories} kcal "
                       f"| P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g")
     else:
         print(f"⚠️ Skipping test: No image found at {test_image_path}.")
-        print("To test, place an image named 'sample_plate.jpg' in the root directory and run this script again.")

@@ -7,6 +7,7 @@ import database
 import nutrition_estimates
 import rag_chain
 from app_services import initialize_database
+from frontend import render_metric_row, render_page_intro, render_section_heading
 
 _estimate_helpers = (
     "NutritionAssessmentError",
@@ -66,67 +67,115 @@ except MySQLError as error:
         f"Details: {error}"
     )
 
-st.header(f"Your Nutrify dashboard, {profile['username']}")
-st.subheader("Your profile estimates")
-st.caption(
-    "Formula-based and AI-explained wellness estimates, not medical advice or a diagnosis. "
-    "BMI reference ranges and calorie needs are approximate."
+render_page_intro(
+    "Today's snapshot",
+    f"Nutrition dashboard for {profile['username']}",
+    "Formula-based and AI-explained wellness estimates, not medical advice or a diagnosis.",
+    icon=":material/monitoring:",
+)
+render_section_heading(
+    "Profile estimates",
+    "BMI reference ranges and calorie needs are approximate.",
+    icon=":material/person:",
 )
 if assessment_save_warning:
     st.warning(assessment_save_warning)
 if assessment_model_warning:
     st.warning(assessment_model_warning)
 
-metric_columns = st.columns(5)
-metric_columns[0].metric("BMI", f"{assessment['bmi']:.1f}")
-metric_columns[1].metric("BMR estimate", f"{assessment['bmr_kcal']:.0f} kcal/day")
-metric_columns[2].metric(
-    "Target weight range",
-    f"{assessment['target_weight_min_kg']:.1f}-"
-    f"{assessment['target_weight_max_kg']:.1f} kg",
-)
-metric_columns[3].metric("Suggested goal", assessment["goal"])
-metric_columns[4].metric(
-    "Daily calorie target",
-    f"{assessment['daily_calorie_limit_kcal']} kcal/day",
+render_metric_row(
+    [
+        ("BMI", f"{assessment['bmi']:.1f}"),
+        ("BMR estimate", f"{assessment['bmr_kcal']:.0f} kcal/day"),
+        (
+            "Target weight range",
+            f"{assessment['target_weight_min_kg']:.1f}-"
+            f"{assessment['target_weight_max_kg']:.1f} kg",
+        ),
+        ("Suggested goal", assessment["goal"]),
+        ("Daily calorie target", f"{assessment['daily_calorie_limit_kcal']} kcal/day"),
+    ]
 )
 if profile.get("sex_for_bmr") not in ("male", "female"):
     st.caption(
         "Because no optional BMR sex input was provided, BMR and calorie target "
         "use a rough midpoint of the two standard Mifflin-St Jeor estimates."
     )
-st.write(assessment["explanation"])
+with st.container(border=True):
+    st.markdown(assessment["explanation"])
 
-st.divider()
-st.header("Your daily nutrition")
+render_section_heading(
+    "Your daily nutrition",
+    "A compact view of the energy and macros logged today.",
+    icon=":material/pie_chart:",
+)
 try:
     totals = database.get_today_totals(user_id)
 except MySQLError as error:
     st.error(f"Unable to load today's nutrition totals: {error}")
     st.stop()
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Calories", f"{totals['calories']} kcal")
-col2.metric("Protein", f"{totals['protein']} g")
-col3.metric("Carbs", f"{totals['carbs']} g")
-col4.metric("Fat", f"{totals['fat']} g")
+render_metric_row(
+    [
+        ("Calories", f"{totals['calories']} kcal"),
+        ("Protein", f"{totals['protein']} g"),
+        ("Carbs", f"{totals['carbs']} g"),
+        ("Fat", f"{totals['fat']} g"),
+    ]
+)
 
-st.subheader("Recent daily history")
+daily_chart, daily_context = st.columns([3, 2], vertical_alignment="top")
+with daily_chart:
+    with st.container(border=True):
+        st.caption("MACRONUTRIENT BALANCE · GRAMS LOGGED TODAY")
+        st.bar_chart(
+            [
+                {"Macronutrient": "Protein", "Grams": totals["protein"]},
+                {"Macronutrient": "Carbohydrates", "Grams": totals["carbs"]},
+                {"Macronutrient": "Fat", "Grams": totals["fat"]},
+            ],
+            x="Macronutrient",
+            y="Grams",
+            x_label="Macronutrient",
+            y_label="Grams logged today",
+        )
+with daily_context:
+    with st.container(border=True):
+        st.caption("READING THE CHART")
+        st.write(
+            "Compare the three macronutrients in grams. Your daily calorie total and detailed meal history remain available below."
+        )
+
+render_section_heading(
+    "Recent daily history",
+    "Review your logged meals alongside the calorie trend.",
+    icon=":material/history:",
+)
 try:
     history = database.get_daily_history(user_id)
 except MySQLError as error:
     st.error(f"Unable to load your meal history: {error}")
 else:
     if history:
-        st.dataframe(history, hide_index=True, width="stretch")
+        history_columns, chart_columns = st.columns([3, 2], vertical_alignment="top")
+        with history_columns:
+            st.dataframe(history, hide_index=True, width="stretch")
+        with chart_columns:
+            st.caption("CALORIE TREND")
+            st.line_chart(
+                sorted(history, key=lambda entry: entry["log_date"]),
+                x="log_date",
+                y="calories",
+                x_label="Date",
+                y_label="Calories",
+            )
     else:
         st.info("Your meals will appear here after you log them.")
 
-st.divider()
-st.subheader("Generate nutrition critique")
-st.write(
-    "Get AI feedback based on your logged intake today. "
-    "This is informational and does not replace professional advice."
+render_section_heading(
+    "Generate nutrition critique",
+    "Get AI feedback based on your logged intake today. This is informational and does not replace professional advice.",
+    icon=":material/clinical_notes:",
 )
 if st.button("Synthesize nutrition report", type="primary"):
     with st.spinner("Generating your report..."):
