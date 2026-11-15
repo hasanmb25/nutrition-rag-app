@@ -4,6 +4,7 @@ from mysql.connector import Error as MySQLError
 
 import database
 from account_security import hash_password, validate_profile
+from ai_models import provider_label
 
 
 DEMO_USERNAME = "nutrifyuser"
@@ -86,7 +87,7 @@ def ensure_demo_account(input_fn=None, password_fn=None):
             )
         if not user["openai_profile_consent"]:
             raise RuntimeError(
-                "The demo account has not consented to OpenAI processing. "
+                f"The demo account has not consented to {provider_label()} processing. "
                 "Review or recreate it through the account registration form."
             )
         return int(user["id"])
@@ -95,10 +96,12 @@ def ensure_demo_account(input_fn=None, password_fn=None):
     read_password = getpass if password_fn is None else password_fn
     consent = prompt(
         "This fictional profile's age, height, weight, activity level, and BMR sex "
-        "may be sent to OpenAI for estimates. Continue? [y/N] "
+        f"may be sent to {provider_label()} for estimates. Continue? [y/N] "
     )
     if consent.strip().lower() not in {"y", "yes"}:
-        raise SystemExit("Demo account was not created; OpenAI consent was not given.")
+        raise SystemExit(
+            f"Demo account was not created; {provider_label()} consent was not given."
+        )
 
     password = read_password(
         f"Choose a password for {DEMO_USERNAME} (10-128 characters): "

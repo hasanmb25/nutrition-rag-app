@@ -4,6 +4,7 @@ import streamlit as st
 from mysql.connector import Error as MySQLError
 
 import database
+from ai_models import provider_label
 import nutrition_estimates
 import rag_chain
 from app_services import initialize_database
@@ -36,7 +37,7 @@ try:
         st.error("The signed-in profile could not be found. Please sign in again.")
         st.stop()
     if not profile["openai_profile_consent"]:
-        st.error("OpenAI processing consent is required for your profile estimates.")
+        st.error(f"{provider_label()} processing consent is required for your profile estimates.")
         st.stop()
     assessment = database.get_profile_assessment(user_id)
 except MySQLError as error:

@@ -8,6 +8,7 @@ from account_security import (
     validate_profile,
     verify_password,
 )
+from ai_models import provider_label
 from app_services import initialize_database
 from frontend import render_brand, render_global_styles, render_page_intro
 
@@ -153,7 +154,7 @@ def render_authentication():
                     profession = st.text_input("Profession", max_chars=120)
                     openai_profile_consent = st.checkbox(
                         "I understand Nutrify sends my age, height, weight, activity level, "
-                        "and optional BMR sex input to OpenAI to generate my estimates. "
+                        f"and optional BMR sex input to {provider_label()} to generate my estimates. "
                         "My username, password, gender identity, and profession are not sent."
                     )
                     register_submitted = st.form_submit_button(
@@ -163,7 +164,7 @@ def render_authentication():
             if register_submitted:
                 if not openai_profile_consent:
                     st.error(
-                        "Consent to OpenAI processing is required to create a profile "
+                        f"Consent to {provider_label()} processing is required to create a profile "
                         "and generate its requested AI estimates."
                     )
                 elif password != confirm_password:

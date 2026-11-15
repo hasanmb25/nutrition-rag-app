@@ -14,17 +14,20 @@ Accounts keep each user's profile and meal history separate.
 |-- data/recipes.json       # Recipe data used to build the vector database
 |-- database.py             # MySQL setup and meal logging
 |-- account_security.py     # Profile validation and password hashing
-|-- nutrition_estimates.py  # GPT profile estimates and numeric validation
+|-- nutrition_estimates.py  # AI profile explanation and numeric estimates
 |-- rag_chain.py            # Recipe search and nutrition critique chains
 |-- vision.py               # Meal image analysis
-|-- config.py               # Environment variable loading
+|-- ai_models.py            # Builds the AI clients for the active provider
+|-- config.py               # Environment variables, provider and model names
 |-- requirements.txt        # Python dependencies
 `-- .streamlit/config.toml   # Streamlit theme
 ```
 
 ## Setup
 
-Requirements: Python 3.10+, a running MySQL server, and an OpenAI API key.
+Requirements: Python 3.10+, a running MySQL server, and one AI key: an OpenAI
+API key, a free Google Gemini API key (https://aistudio.google.com/apikey), or a
+Hugging Face token with the "Inference Providers" permission.
 
 Create and activate a virtual environment:
 
@@ -42,15 +45,31 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (see `.env.example`):
 
 ```text
+AI_PROVIDER=openai          # or: gemini, huggingface
 OPENAI_API_KEY=your_openai_api_key
+GOOGLE_API_KEY=your_google_api_key
+HF_TOKEN=your_huggingface_token
 MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASSWORD=your_mysql_password
 MYSQL_DATABASE=nutrition_app
 ```
+
+## Choosing the AI provider and models
+
+Every AI feature (meal photo analysis, recipe recommendations, the dashboard
+report and the profile explanation) uses one provider, set by `AI_PROVIDER` in
+`.env`. Only the key for that provider is required. Restart Streamlit after
+changing it.
+
+Model names are all in `config.py`, in `Config.MODELS`. To swap a model, edit
+its name there and restart the app. Hugging Face models must be served by an
+Inference Provider; if one fails, pick another model from
+https://huggingface.co/models?inference_provider=all. Vision needs a model that
+accepts images.
 
 The `.env` file contains secrets and should not be committed. The app creates
 the database and account/profile tables on startup. Existing `daily_logs` rows
@@ -76,7 +95,9 @@ not receive usernames, passwords, gender identity, or profession. The results
 are informational estimates, not medical advice or a diagnosis.
 
 The local Chroma vector database is created from `data/recipes.json` the first
-time you generate a recipe. This requires your OpenAI API key.
+time you generate a recipe, using the active provider's embedding model. Each
+embedding model gets its own folder (`chroma_db/` for the default OpenAI model,
+`chroma_db_gemini_<model>/` for Gemini, `chroma_db_hf_<model>/` for Hugging Face).
 
 The dashboard's synthesized daily report compares logged calories with the
 signed-in user's estimated daily calorie target and BMI-based suggested goal,

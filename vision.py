@@ -2,9 +2,8 @@ import base64
 import os
 from typing import Optional
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
-from config import Config
+from ai_models import get_structured_model
 
 # 1. Define our strict output schema using Pydantic
 class FoodItem(BaseModel):
@@ -20,8 +19,8 @@ class MealAnalysis(BaseModel):
     items: list[FoodItem] = Field(description="List of all distinct food items identified in the image")
 
 # 2. Initialize the LLM with structured output capabilities
-llm = ChatOpenAI(model="gpt-4o-mini", api_key=Config.OPENAI_API_KEY, temperature=0.0)
-structured_vision_llm = llm.with_structured_output(MealAnalysis)
+# Model name is set in config.Config.MODELS["<provider>"]["vision"]
+structured_vision_llm = get_structured_model("vision", MealAnalysis)
 
 def encode_image(image_path: str) -> str:
     """Helper function to encode a local image into base64 for the OpenAI API."""

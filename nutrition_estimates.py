@@ -1,11 +1,10 @@
 from langchain_core.exceptions import OutputParserException
 from langchain_core.prompts import ChatPromptTemplate
 from openai import OpenAIError
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, ValidationError
 
 from account_security import ACTIVITY_FACTORS
-from config import Config
+from ai_models import get_structured_model
 
 
 class NutritionAssessmentError(ValueError):
@@ -72,7 +71,7 @@ def normalize_assessment(profile, saved_assessment):
 
 
 def generate_assessment(profile):
-    """Calculate numeric estimates locally and ask GPT for a concise explanation."""
+    """Calculate numeric estimates locally and ask the AI model for a concise explanation."""
     height_inches = profile["height_ft"] * 12 + profile["height_in"]
     estimates = _expected_assessment(profile)
     model_inputs = {
@@ -101,11 +100,8 @@ Mention that the BMI-based goal and calorie target are approximate.
             ("human", "{profile}"),
         ]
     )
-    model = ChatOpenAI(
-        model="gpt-4o-mini",
-        api_key=Config.OPENAI_API_KEY,
-        temperature=0,
-    ).with_structured_output(NutritionExplanation)
+    # Model name is set in config.Config.MODELS["<provider>"]["profile"]
+    model = get_structured_model("profile", NutritionExplanation)
     try:
         result = (prompt_template | model).invoke(
             {"profile": model_inputs},

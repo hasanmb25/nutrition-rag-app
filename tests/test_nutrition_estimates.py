@@ -76,25 +76,16 @@ class NutritionEstimatesTests(unittest.TestCase):
             )
         )
         model = patch(
-            "nutrition_estimates.ChatOpenAI",
-            return_value=type(
-                "MockChatModel",
-                (),
-                {
-                    "with_structured_output": lambda self, schema: model_output
-                },
-            )(),
+            "nutrition_estimates.get_structured_model",
+            return_value=model_output,
         )
 
-        with model as mock_chat:
+        with model as mock_factory:
             result = generate_assessment(PROFILE)
 
         self.assertEqual(result["goal"], "Maintenance")
-        mock_chat.assert_called_once()
-        self.assertEqual(
-            mock_chat.call_args.kwargs["model"],
-            "gpt-4o-mini",
-        )
+        mock_factory.assert_called_once()
+        self.assertEqual(mock_factory.call_args.args[0], "profile")
         prompt_text = "\n".join(message.content for message in captured_messages)
         self.assertIn("age_years", prompt_text)
         self.assertIn("bmr_kcal", prompt_text)

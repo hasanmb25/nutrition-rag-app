@@ -46,7 +46,12 @@ if submitted:
         ):
             vector_store = load_vector_store()
             if vector_store is None:
-                st.error("Vector database is not loaded.")
+                # Don't cache the failure, so the next click tries again.
+                load_vector_store.clear()
+                st.error(
+                    "The recipe database could not be built. If you are on a free "
+                    "AI plan, wait a minute and try again. Details are in the terminal."
+                )
             else:
                 import rag_chain
 

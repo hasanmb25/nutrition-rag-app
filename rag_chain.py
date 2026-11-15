@@ -1,7 +1,7 @@
 import os
 import json
 import re
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+import shutil
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -9,18 +9,15 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from operator import itemgetter
-from config import Config
+from ai_models import chroma_dir, get_chat_model, get_embeddings
 
 # Constants for our Vector DB
-CHROMA_DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
+CHROMA_DB_DIR = chroma_dir()
 DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "recipes.json")
 
-# -----step_1:initializes_openai_embedding_model---
-# Strict LangChain v0.3+ syntax for OpenAI embeddings
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=Config.OPENAI_API_KEY
-)
+# -----step_1:initializes_embedding_model---
+# Model name is set in config.Config.MODELS["<provider>"]["embedding"]
+embeddings = get_embeddings()
 
 def build_or_load_vector_store():
     """
@@ -32,14 +29,20 @@ def build_or_load_vector_store():
     if os.path.exists(CHROMA_DB_DIR) and os.listdir(CHROMA_DB_DIR):
         print(f"Loading existing ChromaDB from {CHROMA_DB_DIR}...")
         try:
-            return Chroma(
-                persist_directory=CHROMA_DB_DIR, 
+            store = Chroma(
+                persist_directory=CHROMA_DB_DIR,
                 embedding_function=embeddings
             )
         except Exception as e:
             print(f"Error loading ChromaDB: {e}")
-            print("HINT: If you changed embedding models, delete the 'chroma_db' folder and rerun.")
+            print(f"HINT: If you changed embedding models, delete the '{os.path.basename(CHROMA_DB_DIR)}' folder and rerun.")
             return None
+        if store._collection.count() > 0:
+            return store
+        # An empty folder is left over from a failed build: start again.
+        print("Existing ChromaDB is empty; rebuilding it.")
+        del store
+        shutil.rmtree(CHROMA_DB_DIR, ignore_errors=True)
 
     # -----step_3:loads_parsed_json_recipes_for_ingestion---
     # Otherwise, we need to ingest the data for the first time
@@ -93,12 +96,14 @@ def build_or_load_vector_store():
         return vector_store
     except Exception as e:
         print(f"❌ Failed to create ChromaDB. Error: {e}")
+        # Remove the half-built folder so the next attempt starts cleanly.
+        shutil.rmtree(CHROMA_DB_DIR, ignore_errors=True)
         return None
 
 # -----step_7:initializes_llms_for_generation_and_critique---
-# Initialize our LLMs strictly using the v0.3+ ChatOpenAI
-llm_mini = ChatOpenAI(model="gpt-4o-mini", api_key=Config.OPENAI_API_KEY, temperature=0.7)
-llm_pro = ChatOpenAI(model="gpt-4o", api_key=Config.OPENAI_API_KEY, temperature=0.3)
+# Model names are set in config.Config.MODELS["<provider>"]["recipe"/"critique"]
+llm_mini = get_chat_model("recipe", temperature=0.7)
+llm_pro = get_chat_model("critique", temperature=0.3)
 
 def format_docs(docs):
     """Helper to format retrieved documents for the prompt."""
