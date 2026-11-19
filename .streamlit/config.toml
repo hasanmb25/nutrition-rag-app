@@ -1,67 +1,89 @@
 [theme]
-# Nutrify's presentation tokens. Light and dark values below keep the
-# built-in Streamlit theme switcher available without application logic.
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap"
-codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+# NutritionRAG design system (design-system/nutritionrag/MASTER.md):
+# flat style, healthy green + macro orange, Lora headings + Raleway body.
+# Light and dark variants keep Streamlit's built-in theme switcher available.
+font = "Raleway:https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap"
+headingFont = "Lora:https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
 baseFontSize = 16
 baseFontWeight = 400
-headingFontSizes = ["2.4rem", "1.65rem", "1.25rem", "1.05rem", "0.95rem", "0.875rem"]
-headingFontWeights = [700, 650, 650, 600, 600, 600]
-baseRadius = "8px"
-buttonRadius = "6px"
+headingFontSizes = ["2.25rem", "1.75rem", "1.3rem", "1.1rem", "1rem", "0.9rem"]
+headingFontWeights = [700, 600, 600, 600, 600, 600]
+metricValueFontSize = "1.75rem"
+metricValueFontWeight = 600
+codeFontSize = "0.875rem"
+# MASTER: 12px cards, 8px buttons/inputs.
+baseRadius = "12px"
+buttonRadius = "8px"
 showWidgetBorder = true
 showSidebarBorder = true
 linkUnderline = false
 
 [theme.light]
-primaryColor = "#0F5C45"
-backgroundColor = "#F7F9F6"
+# MASTER primary #059669 only reaches 3.8:1 against Streamlit's white button
+# text, so the next emerald step (#047857, 5.5:1) is used for primaryColor.
+primaryColor = "#047857"
+backgroundColor = "#ECFDF5"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#17211C"
-borderColor = "#D7E0D8"
-dataframeBorderColor = "#D7E0D8"
-dataframeHeaderBackgroundColor = "#EDF3EC"
-greenColor = "#0F5C45"
-greenBackgroundColor = "#E4F0E8"
-greenTextColor = "#0B4937"
-blueColor = "#236F8F"
-orangeColor = "#A65B10"
-yellowColor = "#806000"
-violetColor = "#6B4E9B"
-redColor = "#B42318"
-grayColor = "#58645B"
-chartCategoricalColors = ["#0F5C45", "#236F8F", "#A65B10", "#6B4E9B", "#B42318", "#587A55"]
-chartSequentialColors = ["#F0F6F0", "#DCECDD", "#C7E0C9", "#ADD2B0", "#8CC092", "#69AA74", "#478D59", "#2B7042", "#185B35", "#0B4729"]
+textColor = "#0F172A"
+linkColor = "#047857"
+borderColor = "#CDE6DC"
+codeBackgroundColor = "#F0F8F6"
+codeTextColor = "#0F172A"
+dataframeBorderColor = "#E1F2ED"
+dataframeHeaderBackgroundColor = "#F0F8F6"
+greenColor = "#059669"
+greenBackgroundColor = "#D1FAE5"
+greenTextColor = "#065F46"
+orangeColor = "#EA580C"
+orangeBackgroundColor = "#FFEDD5"
+orangeTextColor = "#C2410C"
+redColor = "#DC2626"
+redTextColor = "#B91C1C"
+blueColor = "#0369A1"
+yellowColor = "#A16207"
+violetColor = "#6D28D9"
+grayColor = "#475569"
+grayTextColor = "#475569"
+# Protein / carbs / fat keep stable hues across charts.
+chartCategoricalColors = ["#059669", "#EA580C", "#0369A1", "#A16207", "#6D28D9", "#DC2626"]
+chartSequentialColors = ["#ECFDF5", "#D1FAE5", "#A7F3D0", "#6EE7B7", "#34D399", "#10B981", "#059669", "#047857", "#065F46", "#064E3B"]
 
 [theme.dark]
-primaryColor = "#23744B"
-backgroundColor = "#101713"
-secondaryBackgroundColor = "#18221B"
-textColor = "#E7F0E9"
-borderColor = "#314037"
-dataframeBorderColor = "#314037"
-dataframeHeaderBackgroundColor = "#1E2B22"
-greenColor = "#78C39A"
-greenBackgroundColor = "#183A2A"
-greenTextColor = "#A4DDB8"
-blueColor = "#75C5E4"
-orangeColor = "#F1B66F"
-yellowColor = "#F0D680"
-violetColor = "#CBB5F4"
-redColor = "#F3A4A0"
-grayColor = "#AAB8AD"
-chartCategoricalColors = ["#78C39A", "#75C5E4", "#F1B66F", "#CBB5F4", "#F3A4A0", "#A8C79F"]
-chartSequentialColors = ["#122016", "#17301E", "#1C4027", "#255333", "#316640", "#427B50", "#599263", "#76AA7D", "#9BC39F", "#C5DEC6"]
+primaryColor = "#047857"
+backgroundColor = "#0B1A14"
+secondaryBackgroundColor = "#12261D"
+textColor = "#E2F3EC"
+linkColor = "#34D399"
+borderColor = "#24443A"
+codeBackgroundColor = "#12261D"
+codeTextColor = "#E2F3EC"
+dataframeBorderColor = "#24443A"
+dataframeHeaderBackgroundColor = "#173126"
+greenColor = "#34D399"
+greenBackgroundColor = "#123829"
+greenTextColor = "#6EE7B7"
+orangeColor = "#FB923C"
+orangeBackgroundColor = "#3B2112"
+orangeTextColor = "#FDBA74"
+redColor = "#F87171"
+redTextColor = "#FCA5A5"
+blueColor = "#38BDF8"
+yellowColor = "#FACC15"
+violetColor = "#C4B5FD"
+grayColor = "#94A3B8"
+grayTextColor = "#A9B8C9"
+chartCategoricalColors = ["#34D399", "#FB923C", "#38BDF8", "#FACC15", "#C4B5FD", "#F87171"]
+chartSequentialColors = ["#0F2A20", "#123829", "#134A34", "#115E41", "#0F7A53", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0", "#D1FAE5"]
 
 [theme.light.sidebar]
-backgroundColor = "#EDF3EC"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#17211C"
-borderColor = "#D7E0D8"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F8F6"
+textColor = "#0F172A"
+borderColor = "#E1F2ED"
 
 [theme.dark.sidebar]
-backgroundColor = "#141D17"
-secondaryBackgroundColor = "#1E2B22"
-textColor = "#E7F0E9"
-borderColor = "#314037"
+backgroundColor = "#0F2119"
+secondaryBackgroundColor = "#173126"
+textColor = "#E2F3EC"
+borderColor = "#24443A"

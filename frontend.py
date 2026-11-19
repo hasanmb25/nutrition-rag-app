@@ -10,146 +10,32 @@ import streamlit as st
 
 
 def render_global_styles() -> None:
-    """Apply visual-only application tokens around Streamlit's native theme.
+    """Apply the few visual rules that `.streamlit/config.toml` cannot express.
 
-    Color values intentionally resolve through Streamlit variables so the same
-    components remain legible when a person switches between light and dark
-    mode in the built-in settings menu.
+    Colors, fonts, radii, borders and the sidebar all come from the theme in
+    config.toml. This is the single place for custom CSS, and it deliberately
+    avoids Streamlit's internal class names / test ids so it survives upgrades:
+
+    - Raleway ships old-style figures by default; force lining, tabular
+      numerals so calories and macros line up and read cleanly.
+    - Visible keyboard focus ring on interactive elements (a11y).
+    - Honor prefers-reduced-motion.
     """
     st.html(
         """
         <style>
-        :root {
-          --nutrify-space-1: 0.25rem;
-          --nutrify-space-2: 0.5rem;
-          --nutrify-space-3: 0.75rem;
-          --nutrify-space-4: 1rem;
-          --nutrify-space-5: 1.5rem;
-          --nutrify-space-6: 2rem;
-          --nutrify-space-8: 3rem;
-          --nutrify-radius-card: 0.5rem;
-          --nutrify-border: 1px solid var(--border-color);
-          --nutrify-shadow-1: 0 1px 2px rgba(15, 30, 22, 0.05);
-          --nutrify-shadow-2: 0 8px 24px rgba(15, 30, 22, 0.06);
-          --nutrify-duration-fast: 160ms;
-          --nutrify-duration-standard: 220ms;
-        }
-
-        .stApp,
-        [data-testid="stAppViewContainer"] {
-          background: var(--background-color);
-        }
-
-        [data-testid="stMainBlockContainer"] {
-          max-width: 82rem;
-          padding-top: var(--nutrify-space-6);
-          padding-bottom: var(--nutrify-space-8);
-        }
-
-        [data-testid="stHeading"] h1,
-        [data-testid="stHeading"] h2,
-        [data-testid="stHeading"] h3 {
-          letter-spacing: -0.025em;
-        }
-
-        [data-testid="stCaptionContainer"] p {
-          letter-spacing: 0.04em;
-          font-size: 0.72rem;
-          font-weight: 650;
-        }
-
-        [data-testid="stVerticalBlockBorderWrapper"],
-        [data-testid="stMetric"] {
-          border-radius: var(--nutrify-radius-card);
-          border-color: var(--border-color);
-          box-shadow: var(--nutrify-shadow-1);
-        }
-
-        [data-testid="stVerticalBlockBorderWrapper"] {
-          padding: var(--nutrify-space-2);
-        }
-
-        [data-testid="stMetric"] {
-          min-width: 10rem;
-          padding: var(--nutrify-space-4);
-        }
-
-        [data-testid="stMetricLabel"] {
-          letter-spacing: 0.025em;
-          text-transform: uppercase;
-        }
-
-        [data-testid="stMetricValue"] {
-          font-variant-numeric: tabular-nums;
-          letter-spacing: -0.035em;
-        }
-
-        [data-testid="stButton"] > button,
-        [data-testid="stFormSubmitButton"] > button,
-        [data-testid="stPageLink"] a {
-          min-height: 2.75rem;
-          transition: border-color var(--nutrify-duration-fast) ease,
-            box-shadow var(--nutrify-duration-fast) ease,
-            transform var(--nutrify-duration-fast) ease;
-        }
-
-        [data-testid="stButton"] > button:hover,
-        [data-testid="stFormSubmitButton"] > button:hover,
-        [data-testid="stPageLink"] a:hover {
-          border-color: var(--primary-color);
-          box-shadow: var(--nutrify-shadow-2);
-          transform: translateY(-1px);
-        }
-
-        [data-testid="stButton"] > button:active,
-        [data-testid="stFormSubmitButton"] > button:active,
-        [data-testid="stPageLink"] a:active {
-          box-shadow: none;
-          transform: translateY(0);
+        body {
+          font-variant-numeric: lining-nums tabular-nums;
         }
 
         button:focus-visible,
         a:focus-visible,
         input:focus-visible,
         textarea:focus-visible,
+        [role="tab"]:focus-visible,
         [role="combobox"]:focus-visible {
-          outline: 3px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+          outline: 3px solid color-mix(in srgb, var(--primary-color, #047857) 55%, transparent);
           outline-offset: 2px;
-        }
-
-        [data-testid="stTextInput"] input,
-        [data-testid="stNumberInput"] input,
-        [data-testid="stSelectbox"] [data-baseweb="select"] > div,
-        [data-testid="stFileUploader"] section {
-          min-height: 2.75rem;
-          border-radius: calc(var(--nutrify-radius-card) - 2px);
-        }
-
-        [data-testid="stDataFrame"] {
-          border-radius: var(--nutrify-radius-card);
-          overflow: hidden;
-          border: var(--nutrify-border);
-        }
-
-        [data-testid="stNavigation"] {
-          border-bottom: var(--nutrify-border);
-          margin-bottom: var(--nutrify-space-3);
-        }
-
-        [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
-          box-shadow: none;
-        }
-
-        @media (max-width: 640px) {
-          [data-testid="stMainBlockContainer"] {
-            padding-top: var(--nutrify-space-5);
-            padding-right: var(--nutrify-space-4);
-            padding-left: var(--nutrify-space-4);
-          }
-
-          [data-testid="stMetric"] {
-            min-width: 100%;
-          }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -166,20 +52,19 @@ def render_global_styles() -> None:
 
 
 def render_brand() -> None:
-    """Render the persistent app identity above the active view."""
-    st.title("Nutrify", icon=":material/nutrition:")
-    st.caption(
-        "NUTRITION INTELLIGENCE · PRIVATE, PRACTICAL, DATA-LED"
-    )
+    """Render the compact app identity row above the active view."""
+    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+        st.markdown(":material/nutrition: **Nutrify**", width="content")
+        st.badge("Nutrition intelligence", color="green", width="content")
 
 
 def render_page_intro(
     eyebrow: str, title: str, description: str, *, icon: str
 ) -> None:
-    """Render a compact, consistently ordered page introduction."""
-    st.caption(eyebrow.upper())
-    st.header(title, icon=icon)
-    st.markdown(description)
+    """Render the page's single h1 with a short eyebrow and summary line."""
+    st.badge(eyebrow, color="orange")
+    st.title(title, icon=icon)
+    st.caption(description)
 
 
 def render_section_heading(
@@ -196,3 +81,17 @@ def render_metric_row(metrics: Sequence[tuple[str, str]]) -> None:
     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
         for label, value in metrics:
             st.metric(label, value, border=True)
+
+
+def render_user_prompt(text: str) -> None:
+    """Show what the person asked for as a chat bubble."""
+    with st.chat_message("user", avatar=":material/person:"):
+        st.markdown(text)
+
+
+def render_ai_answer(markdown_text: str, *, caption: str | None = None) -> None:
+    """Show an AI/RAG answer as an assistant chat bubble with a source note."""
+    with st.chat_message("assistant", avatar=":material/nutrition:"):
+        st.markdown(markdown_text)
+        if caption:
+            st.caption(caption)

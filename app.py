@@ -47,14 +47,15 @@ def render_home():
         ),
     ]
 
+    st.subheader("Where to next", icon=":material/explore:")
     columns = st.columns(3, vertical_alignment="top", border=True)
     for column, (page, description) in zip(columns, destinations):
         with column:
-            st.subheader(page.title, icon=page.icon)
-            st.caption(description)
+            st.markdown(f"#### {page.icon} {page.title}")
+            st.write(description)
             st.page_link(
                 page,
-                label=f"Open {page.title}",
+                label=f"Open {page.title.lower()}",
                 icon=":material/arrow_forward:",
                 width="stretch",
             )
@@ -69,7 +70,7 @@ dashboard_page = st.Page(
 )
 meal_page = st.Page(
     "views/log_meal.py",
-    title="Log a Meal",
+    title="Log a meal",
     icon=":material/add_a_photo:",
 )
 recipe_page = st.Page(
@@ -90,14 +91,18 @@ def render_authentication():
     auth_panel, context_panel = st.columns([3, 2], vertical_alignment="top")
     with auth_panel:
         with st.container(border=True):
-            login_tab, register_tab = st.tabs(["Log in", "Create account"])
+            login_tab, register_tab = st.tabs(
+                [":material/login: Log in", ":material/person_add: Create account"]
+            )
             with login_tab:
                 with st.form("login_form", border=False):
                     login_username = st.text_input("Username")
                     login_password = st.text_input(
                         "Password", type="password", max_chars=128
                     )
-                    login_submitted = st.form_submit_button("Log in", type="primary")
+                    login_submitted = st.form_submit_button(
+                        "Log in", type="primary", icon=":material/login:", width="stretch"
+                    )
 
             if login_submitted:
                 try:
@@ -158,7 +163,10 @@ def render_authentication():
                         "My username, password, gender identity, and profession are not sent."
                     )
                     register_submitted = st.form_submit_button(
-                        "Create profile", type="primary"
+                        "Create profile",
+                        type="primary",
+                        icon=":material/person_add:",
+                        width="stretch",
                     )
 
             if register_submitted:
@@ -210,6 +218,11 @@ def render_authentication():
             st.write(
                 "Bring your meal history, image analysis, recipe discovery, and daily nutrition into one private view."
             )
+            st.markdown(
+                "- :material/add_a_photo: **Log meals from a photo**: AI estimates portions and macros.\n"
+                "- :material/monitoring: **Track today**: calories, macros and a calorie trend.\n"
+                "- :material/menu_book: **Cook from your pantry**: recipe ideas grounded in a recipe database."
+            )
             st.caption("Your sign-in keeps the account and meal history scoped to you.")
 
 
@@ -240,10 +253,11 @@ navigation = st.navigation(
     position="top",
 )
 with st.sidebar:
-    st.caption("SIGNED-IN PROFILE")
-    st.write(current_user["username"])
-    st.caption("Manage navigation from the top bar.")
-    if st.button("Log out", width="stretch"):
+    with st.container(border=True):
+        st.caption("Signed in as")
+        st.markdown(f":material/account_circle: **{current_user['username']}**")
+    st.caption("Switch pages from the top bar.")
+    if st.button("Log out", icon=":material/logout:", width="stretch"):
         st.session_state.pop("user_id", None)
         st.session_state.pop("username", None)
         st.rerun()

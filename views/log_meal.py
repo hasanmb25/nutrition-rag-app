@@ -22,24 +22,38 @@ render_page_intro(
     icon=":material/add_a_photo:",
 )
 
-with st.container(border=True):
-    uploaded_file = st.file_uploader(
-        "Choose a meal image", type=["jpg", "jpeg", "png"], help="JPG and PNG files are supported."
-    )
-
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    preview_panel, action_panel = st.columns([3, 2], vertical_alignment="top")
-    with preview_panel:
-        with st.container(border=True):
-            render_section_heading(
-                "Review your image",
-                "Check the photo before starting the analysis.",
-                icon=":material/image:",
-            )
+upload_panel, guide_panel = st.columns([3, 2], vertical_alignment="top")
+with upload_panel:
+    with st.container(border=True):
+        render_section_heading(
+            "Upload a photo",
+            "JPG and PNG files are supported.",
+            icon=":material/photo_camera:",
+        )
+        uploaded_file = st.file_uploader(
+            "Choose a meal image",
+            type=["jpg", "jpeg", "png"],
+            help="JPG and PNG files are supported.",
+        )
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
             st.image(image, caption="Image ready for analysis", width="stretch")
-    with action_panel:
-        with st.container(border=True):
+
+with guide_panel:
+    with st.container(border=True):
+        if uploaded_file is None:
+            render_section_heading(
+                "Tips for a good estimate",
+                icon=":material/lightbulb:",
+            )
+            st.markdown(
+                "- Shoot from above with the whole plate in frame.\n"
+                "- Use good light and avoid heavy shadows.\n"
+                "- Keep separate foods visibly apart where possible."
+            )
+            st.caption("Detected items are saved to your meal history automatically.")
+            analyze_submitted = False
+        else:
             render_section_heading(
                 "Ready to analyze",
                 "Nutrify will identify foods, estimate portions, and calculate macros from this photo.",
@@ -52,6 +66,7 @@ if uploaded_file is not None:
                 width="stretch",
             )
 
+if uploaded_file is not None:
     if analyze_submitted:
         with st.spinner("Vision AI is analyzing your food..."):
             temp_path = "temp_upload.jpg"
@@ -62,17 +77,33 @@ if uploaded_file is not None:
 
             if analysis and analysis.items:
                 st.success("Analysis complete.", icon=":material/check_circle:")
+                with st.container(border=True):
+                    render_section_heading(
+                        "Meal total",
+                        "Sum of every detected item below.",
+                        icon=":material/receipt_long:",
+                    )
+                    render_metric_row(
+                        [
+                            ("Calories", f"{sum(i.calories for i in analysis.items):.0f} kcal"),
+                            ("Protein", f"{sum(i.protein for i in analysis.items):.1f} g"),
+                            ("Carbs", f"{sum(i.carbs for i in analysis.items):.1f} g"),
+                            ("Fat", f"{sum(i.fat for i in analysis.items):.1f} g"),
+                        ]
+                    )
                 render_section_heading(
                     "Detected items",
                     "Expand an item to review its estimated serving and macronutrients.",
                     icon=":material/restaurant:",
                 )
-                for item in analysis.items:
+                for index, item in enumerate(analysis.items):
                     # 1. Conditionally add the piece count to the expander title
                     piece_label = f"{item.pieces} pieces, " if item.pieces is not None else ""
                     expander_title = f"{item.food_name} ({piece_label}{item.weight_g}g)"
 
-                    with st.expander(expander_title):
+                    with st.expander(
+                        expander_title, expanded=index == 0, icon=":material/restaurant:"
+                    ):
                         # 2. Build the metrics list dynamically so "Count" only shows if it exists
                         metrics = []
                         # if item.pieces is not None:
