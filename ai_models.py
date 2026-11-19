@@ -1,7 +1,7 @@
 """Single place that builds AI clients for the active provider.
 
 Model names live in config.Config.MODELS; the provider is chosen with
-AI_PROVIDER in .env ("openai", "gemini" or "huggingface").
+AI_PROVIDER in .env ("openai", "gemini", "huggingface" or "ollama").
 """
 import os
 import re
@@ -16,17 +16,33 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from config import Config
 
-# Gemini and Hugging Face both expose OpenAI-compatible endpoints, so the same
-# LangChain client works for every provider; only the URL and key change.
+# Gemini, Hugging Face and Ollama all expose OpenAI-compatible endpoints, so the
+# same LangChain client works for every provider; only the URL and key change.
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 HF_ROUTER_URL = "https://router.huggingface.co/v1"
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-PROVIDER_LABELS = {"openai": "OpenAI", "gemini": "Google Gemini", "huggingface": "Hugging Face"}
+PROVIDER_LABELS = {
+    "openai": "OpenAI",
+    "gemini": "Google Gemini",
+    "huggingface": "Hugging Face",
+    "ollama": "Ollama (local)",
+}
+# Ollama ignores the key, but the OpenAI client requires a non-empty one.
+OLLAMA_PLACEHOLDER_KEY = "ollama"
 
 
 def provider_label():
     return PROVIDER_LABELS[Config.AI_PROVIDER]
+
+
+def provider_status():
+    """(active provider label, reason Ollama was skipped or None) for the UI."""
+    return provider_label(), Config.FALLBACK_REASON
+
+
+def ollama_url():
+    return f"{Config.OLLAMA_BASE_URL}/v1"
 
 
 def _endpoint():
@@ -35,6 +51,7 @@ def _endpoint():
         "openai": (None, Config.OPENAI_API_KEY),
         "gemini": (GEMINI_URL, Config.GOOGLE_API_KEY),
         "huggingface": (HF_ROUTER_URL, Config.HF_TOKEN),
+        "ollama": (ollama_url(), OLLAMA_PLACEHOLDER_KEY),
     }[Config.AI_PROVIDER]
 
 
@@ -54,7 +71,9 @@ def get_chat_model(task, temperature=0.0):
         base_url=base_url,
         temperature=temperature,
         max_retries=2,
-        timeout=90,  # seconds; stops a slow model from freezing the app
+        # seconds; stops a slow model from freezing the app. Local models get
+        # longer because the first call also loads the model into GPU memory.
+        timeout=180 if Config.AI_PROVIDER == "ollama" else 90,
     )
 
 
@@ -126,6 +145,13 @@ class PacedEmbeddings(Embeddings):
 
 
 def get_embeddings():
+    if Config.AI_PROVIDER == "ollama":
+        return OpenAIEmbeddings(
+            model=model_name("embedding"),
+            api_key=OLLAMA_PLACEHOLDER_KEY,
+            base_url=ollama_url(),
+            check_embedding_ctx_length=False,  # send text, not OpenAI token IDs
+        )
     if Config.AI_PROVIDER == "huggingface":
         return HuggingFaceInferenceEmbeddings(model_name("embedding"), Config.HF_TOKEN)
     if Config.AI_PROVIDER == "gemini":
@@ -146,6 +172,8 @@ def chroma_dir():
     embedding_model = model_name("embedding")
     if Config.AI_PROVIDER == "openai" and embedding_model == "text-embedding-3-small":
         return os.path.join(PROJECT_DIR, "chroma_db")  # the original index
-    prefix = {"openai": "openai", "gemini": "gemini", "huggingface": "hf"}[Config.AI_PROVIDER]
+    prefix = {"openai": "openai", "gemini": "gemini", "huggingface": "hf", "ollama": "ollama"}[
+        Config.AI_PROVIDER
+    ]
     slug = re.sub(r"[^A-Za-z0-9]+", "_", embedding_model).strip("_")
     return os.path.join(PROJECT_DIR, f"chroma_db_{prefix}_{slug}")

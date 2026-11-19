@@ -48,7 +48,7 @@ pip install -r requirements.txt
 Create a `.env` file in the project root (see `.env.example`):
 
 ```text
-AI_PROVIDER=openai          # or: gemini, huggingface
+AI_PROVIDER=openai          # or: gemini, huggingface, ollama
 OPENAI_API_KEY=your_openai_api_key
 GOOGLE_API_KEY=your_google_api_key
 HF_TOKEN=your_huggingface_token
@@ -70,6 +70,53 @@ its name there and restart the app. Hugging Face models must be served by an
 Inference Provider; if one fails, pick another model from
 https://huggingface.co/models?inference_provider=all. Vision needs a model that
 accepts images.
+
+### Running on free local models (Ollama)
+
+`AI_PROVIDER=ollama` runs every AI feature on your own GPU at no cost. The
+default models (`gemma3:12b` for everything, `nomic-embed-text` for recipe
+search) fit on a 12 GB card such as an RTX 3060.
+
+1. Install Ollama from https://ollama.com/download and start it.
+2. Download the models:
+
+   ```bash
+   ollama pull gemma3:12b
+   ollama pull nomic-embed-text
+   ```
+
+3. In `.env`:
+
+   ```env
+   AI_PROVIDER=ollama
+   OLLAMA_BASE_URL=http://localhost:11434   # optional, this is the default
+   FALLBACK_PROVIDER=gemini                 # used if Ollama is unavailable
+   GOOGLE_API_KEY=your_google_key           # needed for the fallback
+   ```
+
+When the app starts it checks that Ollama is reachable and that every model in
+`Config.MODELS["ollama"]` is downloaded. If not, it switches to
+`FALLBACK_PROVIDER` and the sidebar shows which provider is active and why. The
+check runs once per start, so restart Streamlit after starting Ollama. The first
+recipe request builds `chroma_db_ollama_nomic_embed_text/` locally.
+
+**Using the main PC's GPU from another computer.** A low-end PC on the same
+network can use the main PC's Ollama instead of installing models:
+
+1. On the main PC, set the Windows environment variable `OLLAMA_HOST=0.0.0.0`,
+   then quit and restart Ollama.
+2. Allow inbound TCP port 11434 in Windows Defender Firewall (private networks
+   only).
+3. On the other PC, set `OLLAMA_BASE_URL=http://<main-PC-LAN-IP>:11434` in `.env`
+   (find the IP with `ipconfig`).
+
+Ollama has no password, so only expose it on a trusted home network. If the
+main PC is off, the other PC falls back to Gemini automatically.
+
+**Online deployment.** Free hosts (Streamlit Community Cloud, Hugging Face
+Spaces) cannot run local models: set `AI_PROVIDER=gemini` there, using the host's
+secrets/environment settings instead of `.env`. The committed
+`chroma_db_gemini_*` folder means the deployed app doesn't re-embed the recipes.
 
 The `.env` file contains secrets and should not be committed. The app creates
 the database and account/profile tables on startup. Existing `daily_logs` rows
@@ -97,7 +144,8 @@ are informational estimates, not medical advice or a diagnosis.
 The local Chroma vector database is created from `data/recipes.json` the first
 time you generate a recipe, using the active provider's embedding model. Each
 embedding model gets its own folder (`chroma_db/` for the default OpenAI model,
-`chroma_db_gemini_<model>/` for Gemini, `chroma_db_hf_<model>/` for Hugging Face).
+`chroma_db_gemini_<model>/` for Gemini, `chroma_db_hf_<model>/` for Hugging Face,
+`chroma_db_ollama_<model>/` for Ollama).
 
 The dashboard's synthesized daily report compares logged calories with the
 signed-in user's estimated daily calorie target and BMI-based suggested goal,

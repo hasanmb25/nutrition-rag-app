@@ -8,7 +8,7 @@ from account_security import (
     validate_profile,
     verify_password,
 )
-from ai_models import provider_label
+from ai_models import provider_label, provider_status
 from app_services import initialize_database
 from frontend import render_brand, render_global_styles, render_page_intro
 
@@ -162,6 +162,9 @@ def render_authentication():
                         f"and optional BMR sex input to {provider_label()} to generate my estimates. "
                         "My username, password, gender identity, and profession are not sent."
                     )
+                    st.badge(
+                        f"AI: {provider_label()}", icon=":material/memory:", color="gray"
+                    )
                     register_submitted = st.form_submit_button(
                         "Create profile",
                         type="primary",
@@ -256,6 +259,13 @@ with st.sidebar:
     with st.container(border=True):
         st.caption("Signed in as")
         st.markdown(f":material/account_circle: **{current_user['username']}**")
+    ai_label, ai_fallback_reason = provider_status()
+    st.badge(f"AI: {ai_label}", icon=":material/memory:", color="green")
+    if ai_fallback_reason:
+        st.warning(
+            f"Local AI unavailable ({ai_fallback_reason}). Using {ai_label}.",
+            icon=":material/cloud:",
+        )
     st.caption("Switch pages from the top bar.")
     if st.button("Log out", icon=":material/logout:", width="stretch"):
         st.session_state.pop("user_id", None)

@@ -6,9 +6,11 @@ env/
 # Credentials and secrets
 .env
 .env.*
+.streamlit/secrets.toml
 
 # Local vector database (rebuilt from data/recipes.json)
 chroma_db/
+chroma_db_ollama_*/
 
 # Raw data
 data/*.csv
